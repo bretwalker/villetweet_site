@@ -63,7 +63,7 @@
         render: function() {
             var link;
             if(this.props.type == 'hashtag') {
-                link = 'https://twitter.com/search?q=%23' + this.props.name + '%20near%3A%22Louisville%2C%20KY%22%20within%3A15mi&src=typd'
+                link = 'https://twitter.com/search?f=realtime&q=%23' + this.props.name + '%20near%3A%22Louisville%2C%20KY%22%20within%3A15mi&src=typd'
             } else {
                 link = 'https://twitter.com/' + this.props.name;
             }
