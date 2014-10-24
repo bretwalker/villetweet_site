@@ -25,15 +25,18 @@
     
     var subNavItems = [
         {
-            key: 0,
+            key: 'all', // 0
+            param: 0,
             name: 'Since Launch (Oct. 1, 2014)'
         },
         {
-            key: 1,
+            key: '7d', // 1
+            param: 1,
             name: 'Last 7 Days'
         },
         {
-            key: 2,
+            key: '30d', // 2
+            param: 2,
             name: 'Last 30 Days'
         },
     ];
@@ -235,7 +238,7 @@
                'active': this.props.selected
             });
             return (
-                React.DOM.li({onClick: this.setNavSelection, className: classes}, React.DOM.a({href: "#"}, this.props.name))
+                React.DOM.li({onClick: this.setNavSelection, className: classes}, React.DOM.a({href: "", className: "nav-item"}, this.props.name))
             );
         }
     });
@@ -264,7 +267,7 @@
       
             return (               
                 React.DOM.li({className: "dropdown"}, 
-                    React.DOM.a({href: "#", className: "dropdown-toggle", 'data-toggle': "dropdown"}, text, React.DOM.span({className: "caret"})), 
+                    React.DOM.a({href: "", className: "dropdown-toggle", 'data-toggle': "dropdown"}, text, React.DOM.span({className: "caret"})), 
                     React.DOM.ul({className: "dropdown-menu", role: "menu"}, 
                         items
                     )
@@ -313,12 +316,12 @@
         getInitialState: function() {
             return { 
                 users: this.props.users,
-                title: 'Prolific Tweeters',
-                subtitle: 'Since Launch (Oct. 1, 2014)',
-                currentPage: 'prolific',
-                days: 0,
+                title: this.props.title,
+                subtitle: this.props.subtitle,
+                currentPage: this.props.currentPage,
+                days: this.props.days,
                 url: '',
-                tweets: []
+                tweets: this.props.tweets,
             };
         },
         render: function() {
@@ -362,7 +365,7 @@
                                     React.DOM.span({className: "icon-bar"}), 
                                     React.DOM.span({className: "icon-bar"})
                                 ), 
-                                React.DOM.span({className: "navbar-brand", href: "#"}, "502 Tweets")
+                                React.DOM.a({className: "navbar-brand", href: "/#prolific/all"}, "502 Tweets")
                             ), 
                             React.DOM.div({className: "navbar-collapse collapse"}, 
                                 React.DOM.ul({className: "nav navbar-nav", role: "menu"}, 
@@ -384,13 +387,13 @@
             );
         },
         changeNav: function(page, days) {
-            $(".btn-navbar").click(); //bootstrap 2.x
-            $(".navbar-toggle").click()
-                
+            $('.navbar-collapse').removeClass('in');
+            $('li.dropdown').removeClass('open');
+            
             var _this = this;    
             $.ajax({
               type: "GET",
-              url: baseServiceUrl + ':8081/' + page + '?days=' + days,
+              url: baseServiceUrl + ':8081/' + page + '?days=' + $.grep(subNavItems, function(e){ return e.key == days; })[0].param,
             }).done(function(data) {
                 thingPositions = {};
                 
@@ -415,23 +418,37 @@
             });  
         },
         setNavSelection: function(item) {
+            if(item.key == this.state.currentPage) {
+                return;
+            }
+            
             isChangingNav = true;
             var _this = this;    
             this.setState({
                 title: item.name,
                 currentPage: item.key
             }, this.changeNav(item.key, _this.state.days));
+            history.pushState(null,
+                null, 
+                '#' + item.key + (item.key != 'recent' ? '/' + _this.state.days : ''));
             window.setTimeout(function() {
                 isChangingNav = false;
             }, 3000);
         },
         setSubNavSelection: function(item) {
+            if(item.key == this.state.days) {
+                return;
+            }
+            
             isChangingNav = true;
             var _this = this;    
             this.setState({
                 subtitle: item.name,
                 days: item.key,
             }, this.changeNav(_this.state.currentPage, item.key));
+            history.pushState(null, 
+                null, 
+                '#' + _this.state.currentPage + (_this.state.currentPage != 'recent' ? '/' + item.key : ''));
             window.setTimeout(function() {
                 isChangingNav = false;
             }, 3000);
@@ -452,20 +469,64 @@
     }
 
     $(document).ready(function() {
+        var location = window.history.location || window.location;
+        var app;
+        
+        $(document).on('click', 'a.nav-item', function() {
+            return false;
+        });
+       
+        $(window).on('popstate', function(e) {
+            var mainNavItem = $.grep(navItems, function(e){ return location.href.search(e.key)!=-1; });
+            var subNavItem = $.grep(subNavItems, function(e){ return location.href.search(e.key)!=-1; });
+            if(mainNavItem.length == 0) {
+                app.setNavSelection(navItems[0]);
+                app.setSubNavSelection(subNavItem[0]);
+            } else {
+                app.setNavSelection(mainNavItem[0]);
+                app.setSubNavSelection(subNavItem[0]);
+            }
+        });
+
+        var urlEnd = 'prolific?days=0';
+        var currentPage = navItems[0].key;
+        var days = subNavItems[0].key;
+        var title = navItems[0].name;
+        var subtitle = navItems[0].name;
+        
+        var mainNavItem = $.grep(navItems, function(e){ return location.href.search(e.key)!=-1; });
+        if(mainNavItem.length > 0) {
+            currentPage = mainNavItem[0].key;
+            title = mainNavItem[0].name;
+            urlEnd = mainNavItem[0].key;
+            var subNavItem = $.grep(subNavItems, function(e){ return location.href.search(e.key)!=-1; });
+            if(subNavItem.length > 0) {
+                urlEnd = urlEnd + '?days=' + subNavItem[0].param;
+                days = subNavItem[0].key;
+                subtitle = subNavItem[0].name;
+            }
+        }
+        
         $.ajax({
           type: 'GET',
-          url: baseServiceUrl + ':8081/prolific?days=0',
+          url: baseServiceUrl + ':8081/' + urlEnd,
         }).done(function(data) {
-            if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
-                data.length = 100;
+            if(currentPage == 'recent') { 
+                app = React.renderComponent(App({tweets: data, users: [], currentPage: currentPage, days: days, title: title, subtitle: subtitle }), document.getElementById('list'));
             }
+            else {
+                if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+                    data.length = 100;
+                }
 
-            thingPositions = {};
-            var i = 0;
-            $.each(data, function() {
-                thingPositions[this.name] = i++;
-            });
-            React.renderComponent(App({users: data}), document.getElementById('list'));
+                thingPositions = {};
+                var i = 0;
+                $.each(data, function() {
+                    thingPositions[this.name] = i++;
+                });
+            
+                app = React.renderComponent(App({users: data, tweets: [], currentPage: currentPage, days: days, title: title, subtitle: subtitle }), document.getElementById('list'));
+            }
         });
     });    
 
