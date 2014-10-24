@@ -2,8 +2,6 @@
     
     var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
     
-    var baseServiceUrl = 'http://louiewatch.com'
-    
     var navItems = [
         {
             key: 'prolific',
@@ -26,7 +24,7 @@
     var subNavItems = [
         {
             key: 0,
-            name: 'Since Launch (Oct. 1, 2014)'
+            name: 'All time'
         },
         {
             key: 1,
@@ -39,21 +37,23 @@
     ];
     
     var thingPositions = {};
-    var isChangingNav = false;
 
     var ScoredTwitterThing = React.createClass({displayName: 'ScoredTwitterThing',
         getInitialState: function() {
             return { 
-                updatedScore: false
+                name: this.props.name, 
+                score: this.props.score, 
+                rank: this.props.rank,
+                updatedScore: false 
             };
         },
         componentWillReceiveProps: function(nextProps) {
             this.setState({
-                updatedScore: (nextProps.score > this.props.score)
+                updatedScore: (nextProps.score > this.props.score) && (this.props.type == nextProps.type)
             });
         },
         componentDidUpdate: function() {
-            if(this.state.updatedScore && !isChangingNav) {
+            if(this.state.updatedScore) {
                 $(this.getDOMNode()).effect("highlight", {}, 500);
             }
         },
@@ -91,13 +91,13 @@
 		    this.setState({'users': this.props.users});
         },
         componentDidMount: function() {
-            this.state.source = new EventSource(baseServiceUrl + ':8080/subscribe/eps/' + this.props.type);
+            this.state.source = new EventSource('http://louiewatch.com:8080/subscribe/eps/' + this.props.type);
 			this.state.source.onmessage = this.updateUserData;
         },
         componentWillUpdate: function(nextProps, nextState) {
             if(nextProps.type != this.props.type) {
                 this.state.source.close();
-                this.state.source = new EventSource(baseServiceUrl + ':8080/subscribe/eps/' + nextProps.type);
+                this.state.source = new EventSource('http://louiewatch.com:8080/subscribe/eps/' + nextProps.type);
                 this.state.source.onmessage = this.updateUserData;
             }
         },
@@ -113,7 +113,7 @@
                 if(lastScore != user.score) {
                     rank++;
                 }
-                rows.push(ScoredTwitterThing({name: user.name, score: user.score, rank: rank, key: user.name, type: _this.props.type, days: _this.props.days}));
+                rows.push(ScoredTwitterThing({name: user.name, score: user.score, rank: rank, key: user.name, type: _this.props.type}));
                 lastScore = user.score;
             });
             return (
@@ -188,7 +188,7 @@
 		    this.setState({'tweets': this.props.tweets});
         },
         componentDidMount: function() {
-            this.state.source = new EventSource(baseServiceUrl + ':8080/subscribe/recent-tweets');
+            this.state.source = new EventSource('http://louiewatch.com:8080/subscribe/recent-tweets');
 		    this.state.source.onmessage = this.updateTweets;
         },
         componentWillUnmount: function() {
@@ -260,7 +260,7 @@
                 );
             });
       
-            var text = this.props.key == "mainNav" ? "Ratings Lists & Firehose" : "Date Ranges";
+            var text = this.props.key == "mainNav" ? "Lists" : "Date Ranges";
       
             return (               
                 React.DOM.li({className: "dropdown"}, 
@@ -273,48 +273,11 @@
         }
     });
     
-    var TweetCount = React.createClass({displayName: 'TweetCount',
-        updateTweetCount: function(e) {
-            var _this = this;
-            update = JSON.parse(e.data)
-
-		    $.each(update, function(key, value) {
-		        _this.setState({
-                    tweetCount: _this.state.tweetCount += value
-                });
-		    });
-        },
-        getInitialState: function() {
-            var source = new EventSource(baseServiceUrl + ':8080/subscribe/eps/tweet-count');
-            source.onmessage = this.updateTweetCount;
-            return { tweetCount: 0, source: source };
-        },
-        componentDidMount: function() {
-            var _this = this;
-            $.ajax({
-              type: 'GET',
-              url: baseServiceUrl + ':8081/tweet-count',
-            }).done(function(data) {
-                _this.setState({
-                    tweetCount: data.tweet_count
-                });
-            });
-        },
-        render: function() {
-            return (               
-                React.DOM.div({id: "tweet-count"}, 
-                    this.state.tweetCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","), " tweets and counting..."
-                )
-            );
-        }
-    });
-    
     var App = React.createClass({displayName: 'App',
         getInitialState: function() {
             return { 
                 users: this.props.users,
                 title: 'Prolific Tweeters',
-                subtitle: 'Since Launch (Oct. 1, 2014)',
                 currentPage: 'prolific',
                 days: 0,
                 url: '',
@@ -325,11 +288,11 @@
             var content;
             
             if (this.state.currentPage == 'prolific') {
-                content = ScoredTwitterThingList({users: this.state.users, type: "prolific", days: this.state.days});
+                content = ScoredTwitterThingList({users: this.state.users, type: "prolific"});
             } else if(this.state.currentPage == 'mentioned') {
-                content = ScoredTwitterThingList({users: this.state.users, type: "mentioned", days: this.state.days});
+                content = ScoredTwitterThingList({users: this.state.users, type: "mentioned"});
             } else if(this.state.currentPage == 'hashtag') {
-                content = ScoredTwitterThingList({users: this.state.users, type: "hashtag", days: this.state.days});
+                content = ScoredTwitterThingList({users: this.state.users, type: "hashtag"});
             } else if(this.state.currentPage == 'recent') {
                 content = TweetList({tweets: this.state.tweets, isRunning: true});
             }
@@ -344,11 +307,6 @@
                     setNavSelection: this.setSubNavSelection, 
                     navItems: subNavItems, 
                     key: "subNav"}));
-            }
-
-            var subtitle = '';
-            if(this.state.title != 'Firehose') {
-                subtitle =  this.state.subtitle;
             }
             
             return (
@@ -367,18 +325,14 @@
                             React.DOM.div({className: "navbar-collapse collapse"}, 
                                 React.DOM.ul({className: "nav navbar-nav", role: "menu"}, 
                                     navs, 
-                                    React.DOM.li(null, React.DOM.a({href: "http://www.louiewatch.com"}, "Louie Watch ", React.DOM.span({className: "glyphicon glyphicon-share-alt"})))
+                                    React.DOM.li(null, React.DOM.a({href: "http://www.louiewath.com"}, "Louie Watch ", React.DOM.span({className: "glyphicon glyphicon-share-alt"})))
                                 )
                             )
                         )
                     ), 
-                    React.DOM.div({id: "content"}, 
                     React.DOM.h1(null, this.state.title), 
-                    React.DOM.h4(null, subtitle), 
-                    TweetCount(null), 
                     React.DOM.div(null, 
                         content
-                    )
                     )
                 )
             );
@@ -390,7 +344,7 @@
             var _this = this;    
             $.ajax({
               type: "GET",
-              url: baseServiceUrl + ':8081/' + page + '?days=' + days,
+              url: 'http://louiewatch.com:8081/' + page + '?days=' + days,
             }).done(function(data) {
                 thingPositions = {};
                 
@@ -400,11 +354,6 @@
                     });
                 } else {    
                     var i = 0;
-
-                    if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
-                        data.length = 100;
-                    }
-
                     $.each(data, function() {
                         thingPositions[this.name] = i++;
                     });
@@ -415,26 +364,17 @@
             });  
         },
         setNavSelection: function(item) {
-            isChangingNav = true;
             var _this = this;    
             this.setState({
                 title: item.name,
                 currentPage: item.key
             }, this.changeNav(item.key, _this.state.days));
-            window.setTimeout(function() {
-                isChangingNav = false;
-            }, 3000);
         },
         setSubNavSelection: function(item) {
-            isChangingNav = true;
             var _this = this;    
             this.setState({
-                subtitle: item.name,
                 days: item.key,
             }, this.changeNav(_this.state.currentPage, item.key));
-            window.setTimeout(function() {
-                isChangingNav = false;
-            }, 3000);
         }
     });
     
@@ -453,13 +393,9 @@
 
     $(document).ready(function() {
         $.ajax({
-          type: 'GET',
-          url: baseServiceUrl + ':8081/prolific?days=0',
+          type: "GET",
+          url: "http://louiewatch.com:8081/prolific?days=0",
         }).done(function(data) {
-            if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
-                data.length = 100;
-            }
-
             thingPositions = {};
             var i = 0;
             $.each(data, function() {

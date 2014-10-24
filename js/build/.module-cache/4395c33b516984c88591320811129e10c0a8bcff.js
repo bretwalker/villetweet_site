@@ -2,7 +2,7 @@
     
     var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
     
-    var baseServiceUrl = 'http://louiewatch.com'
+    var baseUrl = 'http://localhost'
     
     var navItems = [
         {
@@ -41,7 +41,7 @@
     var thingPositions = {};
     var isChangingNav = false;
 
-    var ScoredTwitterThing = React.createClass({
+    var ScoredTwitterThing = React.createClass({displayName: 'ScoredTwitterThing',
         getInitialState: function() {
             return { 
                 updatedScore: false
@@ -66,14 +66,14 @@
             }
             
             return (
-                <div className="thing">
-                    #{this.props.rank} - <span className="thingName"><a href={link}>{this.props.name}</a></span> ({this.props.score})
-                </div>
+                React.DOM.div({className: "thing"}, 
+                    "#", this.props.rank, " - ", React.DOM.span({className: "thingName"}, React.DOM.a({href: link}, this.props.name)), " (", this.props.score, ")"
+                )
             );
         }
     });
 
-    var ScoredTwitterThingList = React.createClass({
+    var ScoredTwitterThingList = React.createClass({displayName: 'ScoredTwitterThingList',
         getInitialState: function() {
             return { users: this.props.users, source: null };
         },
@@ -91,13 +91,13 @@
 		    this.setState({'users': this.props.users});
         },
         componentDidMount: function() {
-            this.state.source = new EventSource(baseServiceUrl + ':8080/subscribe/eps/' + this.props.type);
+            this.state.source = new EventSource(baseUrl + ':8080/subscribe/eps/' + this.props.type);
 			this.state.source.onmessage = this.updateUserData;
         },
         componentWillUpdate: function(nextProps, nextState) {
             if(nextProps.type != this.props.type) {
                 this.state.source.close();
-                this.state.source = new EventSource(baseServiceUrl + ':8080/subscribe/eps/' + nextProps.type);
+                this.state.source = new EventSource(baseUrl + ':8080/subscribe/eps/' + nextProps.type);
                 this.state.source.onmessage = this.updateUserData;
             }
         },
@@ -113,37 +113,37 @@
                 if(lastScore != user.score) {
                     rank++;
                 }
-                rows.push(<ScoredTwitterThing name={user.name} score={user.score} rank={rank} key={user.name} type={_this.props.type} days={_this.props.days} />);
+                rows.push(ScoredTwitterThing({name: user.name, score: user.score, rank: rank, key: user.name, type: _this.props.type, days: _this.props.days}));
                 lastScore = user.score;
             });
             return (
-                <div>
-                    {rows}
-                </div>
+                React.DOM.div(null, 
+                    rows
+                )
             );
         }
     });
     
-    var Tweet = React.createClass({
+    var Tweet = React.createClass({displayName: 'Tweet',
         render: function() {
             
             var text = twttr.txt.autoLink(minEmoji(this.props.text));
             var bioUrl = "https://twitter.com/" + this.props.screenName;
             return (
-                <li className="list-group-item tweet">
-                    <span className="tweetText" dangerouslySetInnerHTML={{__html: text}} />
-                    <div className="tweetUserInfo">
-                        <a href={bioUrl}>
-                            <span className="twitterName">{this.props.name}</span>
-                            <span className="twitterScreenName">@{this.props.screenName}</span>
-                        </a>
-                    </div>
-                </li>
+                React.DOM.li({className: "list-group-item tweet"}, 
+                    React.DOM.span({className: "tweetText", dangerouslySetInnerHTML: {__html: text}}), 
+                    React.DOM.div({className: "tweetUserInfo"}, 
+                        React.DOM.a({href: bioUrl}, 
+                            React.DOM.span({className: "twitterName"}, this.props.name), 
+                            React.DOM.span({className: "twitterScreenName"}, "@", this.props.screenName)
+                        )
+                    )
+                )
             );
         }
     });
     
-    var TweetListControl = React.createClass({
+    var TweetListControl = React.createClass({displayName: 'TweetListControl',
         getInitialState: function() {
             return { handleClick: this.props.handleClick };
         },
@@ -160,14 +160,14 @@
             });
             
             return (
-                <button type="button" className="btn btn-default btn-lg firehoseControl" onClick={this.handleClick}>
-                    <span className={classes}></span>
-                </button>
+                React.DOM.button({type: "button", className: "btn btn-default btn-lg firehoseControl", onClick: this.handleClick}, 
+                    React.DOM.span({className: classes})
+                )
             );
         }
     });
     
-    var TweetList = React.createClass({
+    var TweetList = React.createClass({displayName: 'TweetList',
         getInitialState: function() {
             return { tweets: this.props.tweets, source: null, isRunning: this.props.isRunning };
         },
@@ -188,7 +188,7 @@
 		    this.setState({'tweets': this.props.tweets});
         },
         componentDidMount: function() {
-            this.state.source = new EventSource(baseServiceUrl + ':8080/subscribe/recent-tweets');
+            this.state.source = new EventSource(baseUrl + ':8080/subscribe/recent-tweets');
 		    this.state.source.onmessage = this.updateTweets;
         },
         componentWillUnmount: function() {
@@ -197,35 +197,35 @@
         render: function() {
             var items = this.props.tweets.map(function(tweet) {
                 return (
-                    <Tweet possiblySensitive={tweet.possibly_sensitive}
-                        text={tweet.text}
-                        screenName={tweet.screen_name}
-                        name={tweet.name}
-                        profileImageUrl={tweet.profile_image_url}
-                        createdAt={tweet.created_at}
-                        id={tweet.id}
-                        key={tweet.id} />
+                    Tweet({possiblySensitive: tweet.possibly_sensitive, 
+                        text: tweet.text, 
+                        screenName: tweet.screen_name, 
+                        name: tweet.name, 
+                        profileImageUrl: tweet.profile_image_url, 
+                        createdAt: tweet.created_at, 
+                        id: tweet.id, 
+                        key: tweet.id})
                 );
             });
             
             return (
-                <div>
-                <div id="tweet-control">
-                    <TweetListControl 
-                        isRunning={this.state.isRunning}
-                        handleClick={this.handleControlClick} />
-                </div>
-                <div>
-                    <ul className="list-group">
-                        {items}
-                    </ul>
-                </div>
-                </div>
+                React.DOM.div(null, 
+                React.DOM.div({id: "tweet-control"}, 
+                    TweetListControl({
+                        isRunning: this.state.isRunning, 
+                        handleClick: this.handleControlClick})
+                ), 
+                React.DOM.div(null, 
+                    React.DOM.ul({className: "list-group"}, 
+                        items
+                    )
+                )
+                )
             );
         }
     });
 
-    var NavItem = React.createClass({
+    var NavItem = React.createClass({displayName: 'NavItem',
         setNavSelection: function() {
             this.props.setNavSelection(this.props.item);
         },
@@ -235,12 +235,12 @@
                'active': this.props.selected
             });
             return (
-                <li onClick={this.setNavSelection} className={classes}><a href="#">{this.props.name}</a></li>
+                React.DOM.li({onClick: this.setNavSelection, className: classes}, React.DOM.a({href: "#"}, this.props.name))
             );
         }
     });
         
-    var Nav = React.createClass({
+    var Nav = React.createClass({displayName: 'Nav',
         setNavSelection: function(item) {
             this.props.setNavSelection(item);
         },
@@ -252,28 +252,28 @@
             
             var items = this.props.navItems.map(function(navItem) {
                 return (
-                    <NavItem item={navItem}
-                        key={navItem.key}
-                        name={navItem.name}
-                        setNavSelection={_this.setNavSelection}
-                        selected={navItem.key === _this.props.currentPage} />
+                    NavItem({item: navItem, 
+                        key: navItem.key, 
+                        name: navItem.name, 
+                        setNavSelection: _this.setNavSelection, 
+                        selected: navItem.key === _this.props.currentPage})
                 );
             });
       
             var text = this.props.key == "mainNav" ? "Ratings Lists & Firehose" : "Date Ranges";
       
             return (               
-                <li className="dropdown">
-                    <a href="#" className="dropdown-toggle" data-toggle="dropdown">{text}<span className="caret"></span></a>
-                    <ul className="dropdown-menu" role="menu">
-                        {items}
-                    </ul>
-                </li>
+                React.DOM.li({className: "dropdown"}, 
+                    React.DOM.a({href: "#", className: "dropdown-toggle", 'data-toggle': "dropdown"}, text, React.DOM.span({className: "caret"})), 
+                    React.DOM.ul({className: "dropdown-menu", role: "menu"}, 
+                        items
+                    )
+                )
             );
         }
     });
     
-    var TweetCount = React.createClass({
+    var TweetCount = React.createClass({displayName: 'TweetCount',
         updateTweetCount: function(e) {
             var _this = this;
             update = JSON.parse(e.data)
@@ -285,7 +285,7 @@
 		    });
         },
         getInitialState: function() {
-            var source = new EventSource(baseServiceUrl + ':8080/subscribe/eps/tweet-count');
+            var source = new EventSource(baseUrl + ':8080/subscribe/eps/tweet-count');
             source.onmessage = this.updateTweetCount;
             return { tweetCount: 0, source: source };
         },
@@ -293,7 +293,7 @@
             var _this = this;
             $.ajax({
               type: 'GET',
-              url: baseServiceUrl + ':8081/tweet-count',
+              url: baseUrl + ':8081/tweet-count',
             }).done(function(data) {
                 _this.setState({
                     tweetCount: data.tweet_count
@@ -302,14 +302,14 @@
         },
         render: function() {
             return (               
-                <div id="tweet-count">
-                    {this.state.tweetCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} tweets and counting...
-                </div>
+                React.DOM.div({id: "tweet-count"}, 
+                    this.state.tweetCount.toLocaleString(), " tweets and counting..."
+                )
             );
         }
     });
     
-    var App = React.createClass({
+    var App = React.createClass({displayName: 'App',
         getInitialState: function() {
             return { 
                 users: this.props.users,
@@ -325,25 +325,25 @@
             var content;
             
             if (this.state.currentPage == 'prolific') {
-                content = <ScoredTwitterThingList users={this.state.users} type='prolific' days={this.state.days}  />;
+                content = ScoredTwitterThingList({users: this.state.users, type: "prolific", days: this.state.days});
             } else if(this.state.currentPage == 'mentioned') {
-                content = <ScoredTwitterThingList users={this.state.users} type='mentioned' days={this.state.days} />;
+                content = ScoredTwitterThingList({users: this.state.users, type: "mentioned", days: this.state.days});
             } else if(this.state.currentPage == 'hashtag') {
-                content = <ScoredTwitterThingList users={this.state.users} type='hashtag' days={this.state.days} />;
+                content = ScoredTwitterThingList({users: this.state.users, type: "hashtag", days: this.state.days});
             } else if(this.state.currentPage == 'recent') {
-                content = <TweetList tweets={this.state.tweets} isRunning={true} />;
+                content = TweetList({tweets: this.state.tweets, isRunning: true});
             }
             
-            var navs = [<Nav currentPage={this.state.currentPage} 
-                setNavSelection={this.setNavSelection} 
-                navItems={navItems}
-                key="mainNav" />];
+            var navs = [Nav({currentPage: this.state.currentPage, 
+                setNavSelection: this.setNavSelection, 
+                navItems: navItems, 
+                key: "mainNav"})];
                 
             if(['prolific', 'mentioned', 'hashtag'].indexOf(this.state.currentPage) > -1) {
-                navs.push(<Nav currentPage={this.state.days} 
-                    setNavSelection={this.setSubNavSelection} 
-                    navItems={subNavItems}
-                    key="subNav" />);
+                navs.push(Nav({currentPage: this.state.days, 
+                    setNavSelection: this.setSubNavSelection, 
+                    navItems: subNavItems, 
+                    key: "subNav"}));
             }
 
             var subtitle = '';
@@ -352,35 +352,34 @@
             }
             
             return (
-                <div>
-                    <nav className="navbar navbar-default navbar-fixed-top" role="navigation">
-                        <div className="container">
-                            <div className="navbar-header">
-                                <button type="button" className="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
-                                    <span className="sr-only">Toggle navigation</span>
-                                    <span className="icon-bar"></span>
-                                    <span className="icon-bar"></span>
-                                    <span className="icon-bar"></span>
-                                </button>
-                                <span className="navbar-brand" href="#">502 Tweets</span>
-                            </div>
-                            <div className="navbar-collapse collapse">
-                                <ul className="nav navbar-nav" role="menu">
-                                    {navs}
-                                    <li><a href="http://www.louiewatch.com">Louie Watch <span className="glyphicon glyphicon-share-alt"></span></a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </nav>
-                    <div id="content">
-                    <h1>{this.state.title}</h1>
-                    <h4>{subtitle}</h4>
-                    <TweetCount /> 
-                    <div>
-                        {content}
-                    </div>
-                    </div>
-                </div>
+                React.DOM.div(null, 
+                    React.DOM.nav({className: "navbar navbar-default navbar-fixed-top", role: "navigation"}, 
+                        React.DOM.div({className: "container"}, 
+                            React.DOM.div({className: "navbar-header"}, 
+                                React.DOM.button({type: "button", className: "navbar-toggle collapsed", 'data-toggle': "collapse", 'data-target': ".navbar-collapse"}, 
+                                    React.DOM.span({className: "sr-only"}, "Toggle navigation"), 
+                                    React.DOM.span({className: "icon-bar"}), 
+                                    React.DOM.span({className: "icon-bar"}), 
+                                    React.DOM.span({className: "icon-bar"})
+                                ), 
+                                React.DOM.span({className: "navbar-brand", href: "#"}, "502 Tweets")
+                            ), 
+                            React.DOM.div({className: "navbar-collapse collapse"}, 
+                                React.DOM.ul({className: "nav navbar-nav", role: "menu"}, 
+                                    navs, 
+                                    React.DOM.li(null, React.DOM.a({href: "http://www.louiewatch.com"}, "Louie Watch ", React.DOM.span({className: "glyphicon glyphicon-share-alt"})))
+                                )
+                            )
+                        )
+                    ), 
+                    React.DOM.div({id: "content"}, 
+                    React.DOM.h1(null, this.state.title), TweetCount(null), 
+                    React.DOM.h4(null, subtitle), 
+                    React.DOM.div(null, 
+                        content
+                    )
+                    )
+                )
             );
         },
         changeNav: function(page, days) {
@@ -390,7 +389,7 @@
             var _this = this;    
             $.ajax({
               type: "GET",
-              url: baseServiceUrl + ':8081/' + page + '?days=' + days,
+              url: baseUrl + ':8081/' + page + '?days=' + days,
             }).done(function(data) {
                 thingPositions = {};
                 
@@ -454,7 +453,7 @@
     $(document).ready(function() {
         $.ajax({
           type: 'GET',
-          url: baseServiceUrl + ':8081/prolific?days=0',
+          url: baseUrl + ':8081/prolific?days=0',
         }).done(function(data) {
             if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
                 data.length = 100;
