@@ -492,7 +492,7 @@
         var currentPage = navItems[0].key;
         var days = subNavItems[0].key;
         var title = navItems[0].name;
-        var subtitle = navItems[0].name;
+        var subtitle = subNavItems[0].name;
         
         var mainNavItem = $.grep(navItems, function(e){ return location.href.search(e.key)!=-1; });
         if(mainNavItem.length > 0) {
