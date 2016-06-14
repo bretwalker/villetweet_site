@@ -1,9 +1,9 @@
  /** @jsx React.DOM */
-    
+
     var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
-    
+
     var baseServiceUrl = 'http://louiewatch.com'
-    
+
     var navItems = [
         {
             key: 'prolific',
@@ -22,12 +22,12 @@
             name: 'Firehose'
         }
     ];
-    
+
     var subNavItems = [
         {
             key: 'all', // 0
             param: 0,
-            name: 'Since Launch (Oct. 1, 2014)'
+            name: 'Since Launch (June 14, 2016)'
         },
         {
             key: '7d', // 1
@@ -40,13 +40,13 @@
             name: 'Last 30 Days'
         },
     ];
-    
+
     var thingPositions = {};
     var isChangingNav = false;
 
     var ScoredTwitterThing = React.createClass({
         getInitialState: function() {
-            return { 
+            return {
                 updatedScore: false
             };
         },
@@ -67,7 +67,7 @@
             } else {
                 link = 'https://twitter.com/' + this.props.name;
             }
-            
+
             return (
                 <div className="thing">
                     #{this.props.rank} - <span className="thingName"><a href={link}>{this.props.name}</a></span> ({this.props.score})
@@ -88,9 +88,9 @@
 		        if (key in thingPositions) {
 		            var position = thingPositions[key];
 		            _this.props.users[position].score += value;
-		        } 
+		        }
 		    });
-		    
+
 		    this.setState({'users': this.props.users});
         },
         componentDidMount: function() {
@@ -126,10 +126,10 @@
             );
         }
     });
-    
+
     var Tweet = React.createClass({
         render: function() {
-            
+
             var text = twttr.txt.autoLink(minEmoji(this.props.text));
             var bioUrl = "https://twitter.com/" + this.props.screenName;
             return (
@@ -145,7 +145,7 @@
             );
         }
     });
-    
+
     var TweetListControl = React.createClass({
         getInitialState: function() {
             return { handleClick: this.props.handleClick };
@@ -154,14 +154,14 @@
             this.props.handleClick();
         },
         render: function() {
-            
+
             var cx = React.addons.classSet;
             var classes = cx({
                 'glyphicon': true,
                 'glyphicon-play': !this.props.isRunning,
-                'glyphicon-pause': this.props.isRunning 
+                'glyphicon-pause': this.props.isRunning
             });
-            
+
             return (
                 <button type="button" className="btn btn-default btn-lg firehoseControl" onClick={this.handleClick}>
                     <span className={classes}></span>
@@ -169,7 +169,7 @@
             );
         }
     });
-    
+
     var TweetList = React.createClass({
         getInitialState: function() {
             return { tweets: this.props.tweets, source: null, isRunning: this.props.isRunning };
@@ -181,13 +181,13 @@
             if(!this.state.isRunning) {
                 return;
             }
-            
+
             var _this = this;
             update = JSON.parse(e.data)
 
 		    this.props.tweets.pop();
 		    this.props.tweets.unshift(update);
-		    
+
 		    this.setState({'tweets': this.props.tweets});
         },
         componentDidMount: function() {
@@ -210,11 +210,11 @@
                         key={tweet.id} />
                 );
             });
-            
+
             return (
                 <div>
                 <div id="tweet-control">
-                    <TweetListControl 
+                    <TweetListControl
                         isRunning={this.state.isRunning}
                         handleClick={this.handleControlClick} />
                 </div>
@@ -242,7 +242,7 @@
             );
         }
     });
-        
+
     var Nav = React.createClass({
         setNavSelection: function(item) {
             this.props.setNavSelection(item);
@@ -252,7 +252,7 @@
         },
         render: function() {
             var _this = this;
-            
+
             var items = this.props.navItems.map(function(navItem) {
                 return (
                     <NavItem item={navItem}
@@ -262,10 +262,10 @@
                         selected={navItem.key === _this.props.currentPage} />
                 );
             });
-      
+
             var text = this.props.key == "mainNav" ? "Ratings Lists & Firehose" : "Date Ranges";
-      
-            return (               
+
+            return (
                 <li className="dropdown">
                     <a href="" className="dropdown-toggle" data-toggle="dropdown">{text}<span className="caret"></span></a>
                     <ul className="dropdown-menu" role="menu">
@@ -275,7 +275,7 @@
             );
         }
     });
-    
+
     var TweetCount = React.createClass({
         updateTweetCount: function(e) {
             var _this = this;
@@ -304,17 +304,17 @@
             });
         },
         render: function() {
-            return (               
+            return (
                 <div id="tweet-count">
                     {this.state.tweetCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} tweets and counting...
                 </div>
             );
         }
     });
-    
+
     var App = React.createClass({
         getInitialState: function() {
-            return { 
+            return {
                 users: this.props.users,
                 title: this.props.title,
                 subtitle: this.props.subtitle,
@@ -326,7 +326,7 @@
         },
         render: function() {
             var content;
-            
+
             if (this.state.currentPage == 'prolific') {
                 content = <ScoredTwitterThingList users={this.state.users} type='prolific' days={this.state.days}  />;
             } else if(this.state.currentPage == 'mentioned') {
@@ -336,15 +336,15 @@
             } else if(this.state.currentPage == 'recent') {
                 content = <TweetList tweets={this.state.tweets} isRunning={true} />;
             }
-            
-            var navs = [<Nav currentPage={this.state.currentPage} 
-                setNavSelection={this.setNavSelection} 
+
+            var navs = [<Nav currentPage={this.state.currentPage}
+                setNavSelection={this.setNavSelection}
                 navItems={navItems}
                 key="mainNav" />];
-                
+
             if(['prolific', 'mentioned', 'hashtag'].indexOf(this.state.currentPage) > -1) {
-                navs.push(<Nav currentPage={this.state.days} 
-                    setNavSelection={this.setSubNavSelection} 
+                navs.push(<Nav currentPage={this.state.days}
+                    setNavSelection={this.setSubNavSelection}
                     navItems={subNavItems}
                     key="subNav" />);
             }
@@ -353,7 +353,7 @@
             if(this.state.title != 'Firehose') {
                 subtitle =  this.state.subtitle;
             }
-            
+
             return (
                 <div>
                     <nav className="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -378,7 +378,7 @@
                     <div id="content">
                     <h1>{this.state.title}</h1>
                     <h4>{subtitle}</h4>
-                    <TweetCount /> 
+                    <TweetCount />
                     <div>
                         {content}
                     </div>
@@ -389,19 +389,19 @@
         changeNav: function(page, days) {
             $('.navbar-collapse').removeClass('in');
             $('li.dropdown').removeClass('open');
-            
-            var _this = this;    
+
+            var _this = this;
             $.ajax({
               type: "GET",
               url: baseServiceUrl + ':8081/' + page + '?days=' + $.grep(subNavItems, function(e){ return e.key == days; })[0].param,
             }).done(function(data) {
                 thingPositions = {};
-                
+
                 if(_this.state.currentPage == 'recent') {
                     _this.setState({
                         tweets: data
                     });
-                } else {    
+                } else {
                     var i = 0;
 
                     if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
@@ -415,21 +415,21 @@
                         users: data
                     });
                 }
-            });  
+            });
         },
         setNavSelection: function(item) {
             if(item.key == this.state.currentPage) {
                 return;
             }
-            
+
             isChangingNav = true;
-            var _this = this;    
+            var _this = this;
             this.setState({
                 title: item.name,
                 currentPage: item.key
             }, this.changeNav(item.key, _this.state.days));
             history.pushState(null,
-                null, 
+                null,
                 '#' + item.key + (item.key != 'recent' ? '/' + _this.state.days : ''));
             window.setTimeout(function() {
                 isChangingNav = false;
@@ -439,26 +439,26 @@
             if(item.key == this.state.days) {
                 return;
             }
-            
+
             isChangingNav = true;
-            var _this = this;    
+            var _this = this;
             this.setState({
                 subtitle: item.name,
                 days: item.key,
             }, this.changeNav(_this.state.currentPage, item.key));
-            history.pushState(null, 
-                null, 
+            history.pushState(null,
+                null,
                 '#' + _this.state.currentPage + (_this.state.currentPage != 'recent' ? '/' + item.key : ''));
             window.setTimeout(function() {
                 isChangingNav = false;
             }, 3000);
         }
     });
-    
+
     function sortScoreDescNameAsc(a, b) {
         nameA = a.name.toLowerCase();
         nameB = b.name.toLowerCase();
-        
+
         if (a.score < b.score || (a.score == b.score && nameA > nameB)) {
             return 1;
         } else if (a.score > b.score || (a.score == b.score && nameA < nameB)) {
@@ -471,11 +471,11 @@
     $(document).ready(function() {
         var location = window.history.location || window.location;
         var app;
-        
+
         $(document).on('click', 'a.nav-item', function() {
             return false;
         });
-       
+
         $(window).on('popstate', function(e) {
             var mainNavItem = $.grep(navItems, function(e){ return location.href.search(e.key)!=-1; });
             var subNavItem = $.grep(subNavItems, function(e){ return location.href.search(e.key)!=-1; });
@@ -493,7 +493,7 @@
         var days = subNavItems[0].key;
         var title = navItems[0].name;
         var subtitle = subNavItems[0].name;
-        
+
         var mainNavItem = $.grep(navItems, function(e){ return location.href.search(e.key)!=-1; });
         if(mainNavItem.length > 0) {
             currentPage = mainNavItem[0].key;
@@ -506,12 +506,12 @@
                 subtitle = subNavItem[0].name;
             }
         }
-        
+
         $.ajax({
           type: 'GET',
           url: baseServiceUrl + ':8081/' + urlEnd,
         }).done(function(data) {
-            if(currentPage == 'recent') { 
+            if(currentPage == 'recent') {
                 app = React.renderComponent(App({tweets: data, users: [], currentPage: currentPage, days: days, title: title, subtitle: subtitle }), document.getElementById('list'));
             }
             else {
@@ -524,10 +524,10 @@
                 $.each(data, function() {
                     thingPositions[this.name] = i++;
                 });
-            
+
                 app = React.renderComponent(App({users: data, tweets: [], currentPage: currentPage, days: days, title: title, subtitle: subtitle }), document.getElementById('list'));
             }
         });
-    });    
+    });
 
-    
+
